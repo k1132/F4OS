@@ -4,6 +4,7 @@
 #include <dev/resource.h>
 #include <kernel/sched.h>
 #include <kernel/fault.h>
+#include <kernel/init.h>
 
 #include <dev/arch.h>
 #include <dev/hw/perfcounter.h>
@@ -27,6 +28,7 @@ void os_start(void) __attribute__((section(".kernel")));
 
 void os_start(void) {
     init_arch();
+    do_early_initializers();
 
 #ifdef CONFIG_PERFCOUNTER
     init_perfcounter();
@@ -38,6 +40,7 @@ void os_start(void) {
 
     init_heap();
 
+
 #ifdef CONFIG_HAVE_USART
     init_usart();
 #endif
@@ -46,12 +49,43 @@ void os_start(void) {
     init_usbdev();
 #endif
 
+    do_core_initializers();
+
     printf("\r\n%s\r\n", banner);
 
     if (default_resources[stdout] != default_resources[stderr]) {
         fprintf(stderr, "\r\n%sStandard error terminal.\r\n", banner);
     }
 
+    do_late_initializers();
     start_sched();
     panic_print("Task switching ended.");
+}
+
+/* TODO: Something nicer when an initializer fails... */
+void do_early_initializers(void) {
+    initializer_t *curr = &__begin_early_initializer;
+
+    for(; curr < &__end_early_initializer; curr++) {
+        if((**curr)())
+            panic();
+    }
+}
+
+void do_core_initializers(void) {
+    initializer_t *curr = &__begin_core_initializer;
+
+    for(; curr < &__end_core_initializer; curr++) {
+        if((**curr)())
+            panic();
+    }
+}
+
+void do_late_initializers(void) {
+    initializer_t *curr = &__begin_late_initializer;
+
+    for(; curr < &__end_late_initializer; curr++) {
+        if((**curr)())
+            panic();
+    }
 }
