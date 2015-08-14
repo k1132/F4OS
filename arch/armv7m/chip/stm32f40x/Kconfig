@@ -21,6 +21,10 @@ config STM32_BOARD_32F401CDISCOVERY
 config STM32_BOARD_PX4
     bool
     prompt "PX4 Autopilot"
+
+config STM32_BOARD_STM32F411_NUCLEO
+    bool
+    prompt "STM32F411 Nucleo board"
 endchoice
 
 config STM32_BOARD
@@ -28,6 +32,7 @@ config STM32_BOARD
     default "stm32f4discovery" if STM32_BOARD_STM32F4DISCOVERY
     default "32f401cdiscovery" if STM32_BOARD_32F401CDISCOVERY
     default "px4" if STM32_BOARD_PX4
+    default "stm32f411nucleo" if STM32_BOARD_STM32F411_NUCLEO
 
 config PERFCOUNTER
     bool

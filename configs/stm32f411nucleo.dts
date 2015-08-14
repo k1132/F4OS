@@ -1,0 +1,9 @@
+/dts-v1/;
+/include/ "stm32f4/11xe.dtsi"
+
+/ {
+    compatible = "stmicro,stm32f4discovery-revb", "stmicro,stm32f4discovery",
+        "stmicro,stm32f407vg", "stmicro,stm32f407xg", "stmicro,stm32f407",
+        "stmicro,stm32f405", "stmicro,stm32f4";
+
+};

@@ -1,0 +1,23 @@
+/include/ "common.dtsi"
+
+/ {
+    compatible = "stmicro,stm32f411re", "stmicro,stm32f4";
+
+    memory {
+        compatible = "address-layout";
+        #address-cells = <1>;
+        #size-cells = <1>;
+
+        /* 512KiB flash */
+        flash {
+            attr = "rx";
+            reg = <0x08000000 0x80000>;
+        };
+
+        /* 128KiB SRAM */
+        ram {
+            attr = "rwx";
+            reg = <0x20000000 0x40000>;
+        };
+    };
+};
