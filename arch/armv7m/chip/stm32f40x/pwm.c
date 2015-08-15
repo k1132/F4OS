@@ -48,6 +48,7 @@ struct stm32f4_pwm {
 /* Timers used by PWM peripheral */
 enum timers {
     TIM1,
+    TIM2,
     TIM3,
     TIM4,
     TIM8,
@@ -91,7 +92,11 @@ enum timer_channels {
     TIM13_CH2 = (1 << 25),
     TIM14_CH1 = (1 << 26),
     TIM14_CH2 = (1 << 27),
-    PWM_NUM_CHANNELS = 28,
+    TIM2_CH1 = (1 << 28),
+    TIM2_CH2 = (1 << 29),
+    TIM2_CH3 = (1 << 30),
+    TIM2_CH4 = (1 << 31),
+    PWM_NUM_CHANNELS = 32,
 };
 
 /*
@@ -104,29 +109,41 @@ enum timer_channels {
  */
 static uint32_t gpio_to_timer_channel[STM32F4_NUM_GPIOS] = {
     [0 ... (STM32F4_NUM_GPIOS-1)] = 0,  /* Default to no channels */
+#ifdef CONFIG_PERFCOUNTER
     [STM32F4_GPIO_PA0] = 0 /* TIM2_CH1, TIM5_CH1 */,
     [STM32F4_GPIO_PA1] = 0 /* TIM2_CH2, TIM5_CH2 */,
     [STM32F4_GPIO_PA2] = TIM9_CH1 /* TIM2_CH3, TIM5_CH3 */,
     [STM32F4_GPIO_PA3] = TIM9_CH2 /* TIM2_CH3, TIM5_CH3 */,
     [STM32F4_GPIO_PA5] = 0 /* TIM2_CH1, TIM8_CH1N */,
+    [STM32F4_GPIO_PA15] = 0 /* TIM2_CH1 */,
+    [STM32F4_GPIO_PB3] = 0 /* TIM2_CH2 */,
+    [STM32F4_GPIO_PB10] = 0 /* TIM2_CH3 */,
+    [STM32F4_GPIO_PB11] = 0 /* TIM2_CH4 */,
+#else
+    [STM32F4_GPIO_PA0] = TIM2_CH1 /* TIM5_CH1 */,
+    [STM32F4_GPIO_PA1] =  TIM2_CH2 /* TIM5_CH2 */,
+    [STM32F4_GPIO_PA2] = TIM9_CH1 | TIM2_CH3 /* TIM5_CH3 */,
+    [STM32F4_GPIO_PA3] = TIM9_CH2 | TIM2_CH3 /* TIM5_CH3 */,
+    [STM32F4_GPIO_PA5] = TIM2_CH1 /* TIM8_CH1N */,
+    [STM32F4_GPIO_PA15] = TIM2_CH1,
+    [STM32F4_GPIO_PB3] = TIM2_CH2,
+    [STM32F4_GPIO_PB10] = TIM2_CH3,
+    [STM32F4_GPIO_PB11] = TIM2_CH4,
+#endif /* CONFIG_PERFOUNTER */
     [STM32F4_GPIO_PA6] = TIM3_CH1 | TIM13_CH1,
     [STM32F4_GPIO_PA7] = TIM3_CH2 | TIM14_CH1 /* TIM1_CH1N, TIM8_CH1N */,
     [STM32F4_GPIO_PA8] = TIM1_CH1,
     [STM32F4_GPIO_PA9] = TIM1_CH2,
     [STM32F4_GPIO_PA10] = TIM1_CH3,
     [STM32F4_GPIO_PA11] = TIM1_CH4,
-    [STM32F4_GPIO_PA15] = 0 /* TIM2_CH1 */,
     [STM32F4_GPIO_PB0] = TIM3_CH3 /* TIM1_CH2N, TIM8_CH2N */,
     [STM32F4_GPIO_PB1] = TIM3_CH4 /* TIM1_CH3N, TIM8_CH3N */,
-    [STM32F4_GPIO_PB3] = 0 /* TIM2_CH2 */,
     [STM32F4_GPIO_PB4] = TIM3_CH1,
     [STM32F4_GPIO_PB5] = TIM3_CH2,
     [STM32F4_GPIO_PB6] = TIM4_CH1,
     [STM32F4_GPIO_PB7] = TIM4_CH2,
     [STM32F4_GPIO_PB8] = TIM4_CH3 | TIM10_CH1,
     [STM32F4_GPIO_PB9] = TIM4_CH4 | TIM11_CH1,
-    [STM32F4_GPIO_PB10] = 0 /* TIM2_CH3 */,
-    [STM32F4_GPIO_PB11] = 0 /* TIM2_CH4 */,
     [STM32F4_GPIO_PB13] = 0 /* TIM1_CH1N */,
     [STM32F4_GPIO_PB14] = TIM12_CH1 /* TIM1_CH2N, TIM8_CH2N */,
     [STM32F4_GPIO_PB15] = TIM12_CH2 /* TIM1_CH3N, TIM8_CH3N */,
@@ -188,6 +205,11 @@ static uint8_t timer_channel_to_timer(enum timer_channels channel) {
         case TIM1_CH3:
         case TIM1_CH4:
             return 1;
+        case TIM2_CH1:
+        case TIM2_CH2:
+        case TIM2_CH3:
+        case TIM2_CH4:
+            return 2;
         case TIM3_CH1:
         case TIM3_CH2:
         case TIM3_CH3:
@@ -230,6 +252,7 @@ static uint8_t timer_channel_to_timer(enum timer_channels channel) {
 static uint8_t timer_channel_to_channel(enum timer_channels channel) {
     switch (channel) {
         case TIM1_CH1:
+        case TIM2_CH1:
         case TIM3_CH1:
         case TIM4_CH1:
         case TIM8_CH1:
@@ -241,6 +264,7 @@ static uint8_t timer_channel_to_channel(enum timer_channels channel) {
         case TIM14_CH1:
             return 1;
         case TIM1_CH2:
+        case TIM2_CH2:
         case TIM3_CH2:
         case TIM4_CH2:
         case TIM8_CH2:
@@ -252,11 +276,13 @@ static uint8_t timer_channel_to_channel(enum timer_channels channel) {
         case TIM14_CH2:
             return 2;
         case TIM1_CH3:
+        case TIM2_CH3:
         case TIM3_CH3:
         case TIM4_CH3:
         case TIM8_CH3:
             return 3;
         case TIM1_CH4:
+        case TIM2_CH4:
         case TIM3_CH4:
         case TIM4_CH4:
         case TIM8_CH4:
@@ -275,6 +301,7 @@ static uint8_t timer_channel_to_channel(enum timer_channels channel) {
 static uint32_t timer_all_channels(uint8_t timer) {
     switch (timer) {
         case 1: return TIM1_CH1 | TIM1_CH2 | TIM1_CH3 | TIM1_CH4;
+        case 2: return TIM2_CH1 | TIM2_CH2 | TIM2_CH3 | TIM2_CH4;
         case 3: return TIM3_CH1 | TIM3_CH2 | TIM3_CH3 | TIM3_CH4;
         case 4: return TIM4_CH1 | TIM4_CH2 | TIM4_CH3 | TIM4_CH4;
         case 8: return TIM8_CH1 | TIM8_CH2 | TIM8_CH3 | TIM8_CH4;
@@ -296,6 +323,7 @@ static uint32_t timer_all_channels(uint8_t timer) {
 static struct mutex *timer_mutex(uint8_t timer) {
     switch (timer) {
         case 1: return &timer_mut[TIM1];
+        case 2: return &timer_mut[TIM2];
         case 3: return &timer_mut[TIM3];
         case 4: return &timer_mut[TIM4];
         case 8: return &timer_mut[TIM8];

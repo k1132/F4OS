@@ -36,4 +36,4 @@ config STM32_BOARD
 
 config PERFCOUNTER
     bool
-    default y
+    default n
